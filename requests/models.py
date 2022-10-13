@@ -38,7 +38,7 @@ from .utils import (
 from .compat import (
     Callable, Mapping,
     cookielib, urlunparse, urlsplit, urlencode, str, bytes,
-    is_py2, chardet, builtin_str, basestring)
+    is_py2, builtin_str, basestring)
 from .compat import json as complexjson
 from .status_codes import codes
 
@@ -726,8 +726,18 @@ class Response(object):
 
     @property
     def apparent_encoding(self):
-        """The apparent encoding, provided by the chardet library."""
-        return chardet.detect(self.content)['encoding']
+        """The apparent encoding, used to be detected by chardet
+        but is now returned as either UTF-8 (very common) or ISO-8859-1
+
+        Copied from https://github.com/encode/httpx/issues/1018
+        Author: Tronic L. Kärkkäinen"""
+
+        encoding = "UTF-8"
+        try:
+            text = self.content.decode(encoding)
+        except UnicodeDecodeError:
+            encoding = "ISO-8859-1"
+        return encoding
 
     def iter_content(self, chunk_size=1, decode_unicode=False):
         """Iterates over the response data.  When stream=True is set on the
